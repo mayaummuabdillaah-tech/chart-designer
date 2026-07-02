@@ -2,17 +2,38 @@ import { useState, useRef, useCallback } from "react";
 import { Eraser, Download, Plus, Minus, RotateCcw, Grid3x3 } from "lucide-react";
 
 const KNIT_SYMBOLS = [
-  { id: "k", label: "Knit (K)", glyph: "", uk: "Knit" },
-  { id: "p", label: "Purl (P)", glyph: "•", uk: "Purl" },
-  { id: "yo", label: "Yarn Over (YO)", glyph: "○", uk: "Yfwd" },
-  { id: "k2tog", label: "K2tog", glyph: "╲", uk: "K2tog" },
-  { id: "ssk", label: "SSK", glyph: "╱", uk: "Skpo" },
-  { id: "sl", label: "Slip (Sl1)", glyph: "▾", uk: "Sl1" },
-  { id: "cdd", label: "Centre Dbl Dec", glyph: "▲", uk: "Sl2-k1-psso" },
-  { id: "c4f", label: "Cable 4 Front", glyph: "⤬", uk: "C4F" },
-  { id: "c4b", label: "Cable 4 Back", glyph: "⤫", uk: "C4B" },
-  { id: "bobble", label: "Bobble (MB)", glyph: "❖", uk: "MB" },
-  { id: "nostitch", label: "No Stitch", glyph: "▢", uk: "No st" },
+  // Basic
+  { id: "k",      label: "Knit (K)",         glyph: "",   uk: "Knit",        cat: "Basic" },
+  { id: "p",      label: "Purl (P)",          glyph: "•",  uk: "Purl",        cat: "Basic" },
+  { id: "ktbl",   label: "K tbl",             kind: "ktbl",                   uk: "K tbl",   cat: "Basic" },
+  { id: "ptbl",   label: "P tbl",             kind: "ptbl",                   uk: "P tbl",   cat: "Basic" },
+  { id: "sl",     label: "Slip (Sl1)",        glyph: "▾",  uk: "Sl1",         cat: "Basic" },
+  { id: "nostitch", label: "No Stitch",       kind: "nostitchX",              uk: "No st",   cat: "Basic" },
+  // Yarn Over
+  { id: "yo",     label: "YO",                glyph: "○",  uk: "Yfwd",        cat: "YO" },
+  { id: "yo2",    label: "YO twice",          kind: "yo2",                    uk: "Yfwd x2", cat: "YO" },
+  { id: "yo3",    label: "YO 3×",             kind: "yon", n: 3,              uk: "Yfwd x3", cat: "YO" },
+  { id: "yo4",    label: "YO 4×",             kind: "yon", n: 4,              uk: "Yfwd x4", cat: "YO" },
+  // Decrease
+  { id: "k2tog",  label: "K2tog",             glyph: "╱",  uk: "K2tog",       cat: "Dec" },
+  { id: "p2tog",  label: "P2tog",             kind: "p2tog",                  uk: "P2tog",   cat: "Dec" },
+  { id: "ssk",    label: "SSK",               glyph: "╲",  uk: "Skpo",        cat: "Dec" },
+  { id: "ssp",    label: "SSP",               kind: "ssp",                    uk: "SSP",     cat: "Dec" },
+  { id: "k3tog",  label: "K3tog",             kind: "k3tog",                  uk: "K3tog",   cat: "Dec" },
+  { id: "p3tog",  label: "P3tog",             kind: "p3tog",                  uk: "P3tog",   cat: "Dec" },
+  { id: "sssk",   label: "SSSK",              kind: "sssk",                   uk: "SSSK",    cat: "Dec" },
+  { id: "cdd",    label: "CDD (sl2-k1-p2sso)", kind: "cdd",                  uk: "Sl2-k1-p2sso", cat: "Dec" },
+  { id: "dec4",   label: "Dec 4→1",           kind: "decN", n: 4,             uk: "Dec4",    cat: "Dec" },
+  { id: "dec5",   label: "Dec 5→1",           kind: "decN", n: 5,             uk: "Dec5",    cat: "Dec" },
+  // Increase
+  { id: "kfb",    label: "Kfb",               kind: "kfb",                    uk: "Kfb",     cat: "Inc" },
+  { id: "kfbf",   label: "Kfbf",              kind: "kfbf",                   uk: "Kfbf",    cat: "Inc" },
+  { id: "k1p1",   label: "(K1,P1) in 1",      kind: "k1p1",                   uk: "K1P1",    cat: "Inc" },
+  { id: "inc4",   label: "Inc 1→4",           kind: "incN", n: 4,             uk: "Inc4",    cat: "Inc" },
+  // Cable
+  { id: "c4f",    label: "Cable 4F",          glyph: "⤬",  uk: "C4F",        cat: "Cable" },
+  { id: "c4b",    label: "Cable 4B",          glyph: "⤫",  uk: "C4B",        cat: "Cable" },
+  { id: "bobble", label: "Bobble (MB)",        glyph: "❖",  uk: "MB",         cat: "Cable" },
 ];
 
 const CROCHET_SYMBOLS = [
@@ -101,6 +122,203 @@ function drawCrochetSymbol(ctx, kind, bars, cx, cy, s, color) {
   }
   ctx.restore();
 }
+
+function KnitSymbolSVG({ kind, n, size = 22, color = "#3D2B1F" }) {
+  const c = size / 2, h = size * 0.42, sw = Math.max(1.4, size * 0.07);
+  if (kind === "ktbl") return (
+    <svg width={size} height={size}>
+      <ellipse cx={c} cy={c} rx={size*0.22} ry={size*0.3} fill="none" stroke={color} strokeWidth={sw}/>
+      <line x1={c} y1={c-size*0.3} x2={c} y2={c-size*0.42} stroke={color} strokeWidth={sw}/>
+    </svg>
+  );
+  if (kind === "ptbl") return (
+    <svg width={size} height={size}>
+      <circle cx={c} cy={c} r={size*0.12} fill={color}/>
+      <ellipse cx={c} cy={c} rx={size*0.22} ry={size*0.3} fill="none" stroke={color} strokeWidth={sw}/>
+    </svg>
+  );
+  if (kind === "nostitchX") return (
+    <svg width={size} height={size}>
+      <rect x={size*0.1} y={size*0.1} width={size*0.8} height={size*0.8} fill="none" stroke={color} strokeWidth={sw}/>
+      <line x1={size*0.1} y1={size*0.1} x2={size*0.9} y2={size*0.9} stroke={color} strokeWidth={sw}/>
+      <line x1={size*0.9} y1={size*0.1} x2={size*0.1} y2={size*0.9} stroke={color} strokeWidth={sw}/>
+    </svg>
+  );
+  if (kind === "yo2") return (
+    <svg width={size} height={size}>
+      <circle cx={c-size*0.18} cy={c} r={size*0.14} fill="none" stroke={color} strokeWidth={sw}/>
+      <circle cx={c+size*0.18} cy={c} r={size*0.14} fill="none" stroke={color} strokeWidth={sw}/>
+    </svg>
+  );
+  if (kind === "yon") return (
+    <svg width={size} height={size}>
+      <circle cx={c} cy={c} r={size*0.26} fill="none" stroke={color} strokeWidth={sw}/>
+      <text x={c} y={c+size*0.1} textAnchor="middle" fontSize={size*0.35} fill={color} fontFamily="Georgia,serif">{n}</text>
+    </svg>
+  );
+  if (kind === "p2tog") return (
+    <svg width={size} height={size}>
+      <line x1={c-h*0.4} y1={c+h} x2={c} y2={c-h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c+h*0.4} y1={c+h} x2={c} y2={c-h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <circle cx={c} cy={c-h*0.3} r={size*0.07} fill={color}/>
+    </svg>
+  );
+  if (kind === "ssp") return (
+    <svg width={size} height={size}>
+      <line x1={c+h*0.4} y1={c+h} x2={c} y2={c-h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c-h*0.4} y1={c+h} x2={c} y2={c-h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <circle cx={c} cy={c-h*0.3} r={size*0.07} fill={color}/>
+    </svg>
+  );
+  if (kind === "k3tog") return (
+    <svg width={size} height={size}>
+      <line x1={c-h*0.55} y1={c+h} x2={c} y2={c-h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c} y1={c+h} x2={c} y2={c-h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c+h*0.55} y1={c+h} x2={c} y2={c-h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+    </svg>
+  );
+  if (kind === "p3tog") return (
+    <svg width={size} height={size}>
+      <line x1={c-h*0.55} y1={c+h} x2={c} y2={c-h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c} y1={c+h} x2={c} y2={c-h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c+h*0.55} y1={c+h} x2={c} y2={c-h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <circle cx={c} cy={c-h*0.3} r={size*0.07} fill={color}/>
+    </svg>
+  );
+  if (kind === "sssk") return (
+    <svg width={size} height={size}>
+      <line x1={c+h*0.55} y1={c+h} x2={c} y2={c-h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c} y1={c+h} x2={c} y2={c-h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c-h*0.55} y1={c+h} x2={c} y2={c-h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+    </svg>
+  );
+  if (kind === "cdd") return (
+    <svg width={size} height={size}>
+      <line x1={c-h*0.45} y1={c+h} x2={c} y2={c-h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c} y1={c+h} x2={c} y2={c-h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c+h*0.45} y1={c+h} x2={c} y2={c-h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c-h*0.5} y1={c+h*0.1} x2={c+h*0.5} y2={c+h*0.1} stroke={color} strokeWidth={sw}/>
+    </svg>
+  );
+  if (kind === "decN") return (
+    <svg width={size} height={size}>
+      <line x1={c-h*0.55} y1={c+h} x2={c} y2={c-h*0.5} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c+h*0.55} y1={c+h} x2={c} y2={c-h*0.5} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c} y1={c-h*0.5} x2={c} y2={c-h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <text x={c} y={c+h*0.6} textAnchor="middle" fontSize={size*0.28} fill={color} fontFamily="Georgia,serif">{n}</text>
+    </svg>
+  );
+  if (kind === "kfb") return (
+    <svg width={size} height={size}>
+      <line x1={c} y1={c-h*0.5} x2={c-h*0.45} y2={c+h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c} y1={c-h*0.5} x2={c+h*0.45} y2={c+h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+    </svg>
+  );
+  if (kind === "kfbf") return (
+    <svg width={size} height={size}>
+      <line x1={c} y1={c-h*0.5} x2={c-h*0.55} y2={c+h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c} y1={c-h*0.5} x2={c} y2={c+h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c} y1={c-h*0.5} x2={c+h*0.55} y2={c+h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+    </svg>
+  );
+  if (kind === "k1p1") return (
+    <svg width={size} height={size}>
+      <line x1={c} y1={c-h*0.5} x2={c-h*0.35} y2={c+h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c} y1={c-h*0.5} x2={c+h*0.35} y2={c+h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <circle cx={c+h*0.35} cy={c+h*0.2} r={size*0.07} fill={color}/>
+    </svg>
+  );
+  if (kind === "incN") return (
+    <svg width={size} height={size}>
+      <line x1={c} y1={c-h*0.5} x2={c-h*0.55} y2={c+h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <line x1={c} y1={c-h*0.5} x2={c+h*0.55} y2={c+h} stroke={color} strokeWidth={sw} strokeLinecap="round"/>
+      <text x={c} y={c+h*0.5} textAnchor="middle" fontSize={size*0.28} fill={color} fontFamily="Georgia,serif">{n}</text>
+    </svg>
+  );
+  return null;
+}
+
+function drawKnitSymbol(ctx, kind, n, cx, cy, s, color) {
+  const h = s * 0.42, sw = Math.max(1.4, s * 0.07);
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = sw;
+  ctx.lineCap = "round";
+  if (kind === "ktbl") {
+    ctx.beginPath(); ctx.ellipse(cx, cy, s*0.22, s*0.3, 0, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy-s*0.3); ctx.lineTo(cx, cy-s*0.42); ctx.stroke();
+  } else if (kind === "ptbl") {
+    ctx.beginPath(); ctx.arc(cx, cy, s*0.12, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx, cy, s*0.22, s*0.3, 0, 0, Math.PI*2); ctx.stroke();
+  } else if (kind === "nostitchX") {
+    ctx.strokeRect(cx-s*0.4, cy-s*0.4, s*0.8, s*0.8);
+    ctx.beginPath(); ctx.moveTo(cx-s*0.4, cy-s*0.4); ctx.lineTo(cx+s*0.4, cy+s*0.4);
+    ctx.moveTo(cx+s*0.4, cy-s*0.4); ctx.lineTo(cx-s*0.4, cy+s*0.4); ctx.stroke();
+  } else if (kind === "yo2") {
+    ctx.beginPath(); ctx.arc(cx-s*0.18, cy, s*0.14, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx+s*0.18, cy, s*0.14, 0, Math.PI*2); ctx.stroke();
+  } else if (kind === "yon") {
+    ctx.beginPath(); ctx.arc(cx, cy, s*0.26, 0, Math.PI*2); ctx.stroke();
+    ctx.font = `${s*0.35}px Georgia,serif`; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(String(n), cx, cy+2);
+  } else if (kind === "p2tog") {
+    ctx.beginPath(); ctx.moveTo(cx-h*0.4,cy+h); ctx.lineTo(cx,cy-h);
+    ctx.moveTo(cx+h*0.4,cy+h); ctx.lineTo(cx,cy-h); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx,cy-h*0.3,s*0.07,0,Math.PI*2); ctx.fill();
+  } else if (kind === "ssp") {
+    ctx.beginPath(); ctx.moveTo(cx+h*0.4,cy+h); ctx.lineTo(cx,cy-h);
+    ctx.moveTo(cx-h*0.4,cy+h); ctx.lineTo(cx,cy-h); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx,cy-h*0.3,s*0.07,0,Math.PI*2); ctx.fill();
+  } else if (kind === "k3tog" || kind === "sssk") {
+    ctx.beginPath();
+    ctx.moveTo(cx-(kind==="sssk"?-1:1)*h*0.55,cy+h); ctx.lineTo(cx,cy-h);
+    ctx.moveTo(cx,cy+h); ctx.lineTo(cx,cy-h);
+    ctx.moveTo(cx+(kind==="sssk"?-1:1)*h*0.55,cy+h); ctx.lineTo(cx,cy-h);
+    ctx.stroke();
+  } else if (kind === "p3tog") {
+    ctx.beginPath();
+    ctx.moveTo(cx-h*0.55,cy+h); ctx.lineTo(cx,cy-h);
+    ctx.moveTo(cx,cy+h); ctx.lineTo(cx,cy-h);
+    ctx.moveTo(cx+h*0.55,cy+h); ctx.lineTo(cx,cy-h); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx,cy-h*0.3,s*0.07,0,Math.PI*2); ctx.fill();
+  } else if (kind === "cdd") {
+    ctx.beginPath();
+    ctx.moveTo(cx-h*0.45,cy+h); ctx.lineTo(cx,cy-h);
+    ctx.moveTo(cx,cy+h); ctx.lineTo(cx,cy-h);
+    ctx.moveTo(cx+h*0.45,cy+h); ctx.lineTo(cx,cy-h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx-h*0.5,cy+h*0.1); ctx.lineTo(cx+h*0.5,cy+h*0.1); ctx.stroke();
+  } else if (kind === "decN") {
+    ctx.beginPath();
+    ctx.moveTo(cx-h*0.55,cy+h); ctx.lineTo(cx,cy-h*0.5);
+    ctx.moveTo(cx+h*0.55,cy+h); ctx.lineTo(cx,cy-h*0.5);
+    ctx.moveTo(cx,cy-h*0.5); ctx.lineTo(cx,cy-h); ctx.stroke();
+    ctx.font=`${s*0.28}px Georgia,serif`; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(String(n),cx,cy+h*0.4);
+  } else if (kind === "kfb") {
+    ctx.beginPath();
+    ctx.moveTo(cx,cy-h*0.5); ctx.lineTo(cx-h*0.45,cy+h);
+    ctx.moveTo(cx,cy-h*0.5); ctx.lineTo(cx+h*0.45,cy+h); ctx.stroke();
+  } else if (kind === "kfbf") {
+    ctx.beginPath();
+    ctx.moveTo(cx,cy-h*0.5); ctx.lineTo(cx-h*0.55,cy+h);
+    ctx.moveTo(cx,cy-h*0.5); ctx.lineTo(cx,cy+h);
+    ctx.moveTo(cx,cy-h*0.5); ctx.lineTo(cx+h*0.55,cy+h); ctx.stroke();
+  } else if (kind === "k1p1") {
+    ctx.beginPath();
+    ctx.moveTo(cx,cy-h*0.5); ctx.lineTo(cx-h*0.35,cy+h);
+    ctx.moveTo(cx,cy-h*0.5); ctx.lineTo(cx+h*0.35,cy+h); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx+h*0.35,cy+h*0.2,s*0.07,0,Math.PI*2); ctx.fill();
+  } else if (kind === "incN") {
+    ctx.beginPath();
+    ctx.moveTo(cx,cy-h*0.5); ctx.lineTo(cx-h*0.55,cy+h);
+    ctx.moveTo(cx,cy-h*0.5); ctx.lineTo(cx+h*0.55,cy+h); ctx.stroke();
+    ctx.font=`${s*0.28}px Georgia,serif`; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(String(n),cx,cy+h*0.4);
+  }
+  ctx.restore();
+}
+
 
 function CrochetSymbolSVG({ kind, bars, size = 22, color = "#3D2B1F" }) {
   const h = size * 0.42;
@@ -293,6 +511,8 @@ export default function ChartDesigner() {
             const s = SYMBOLS.find((s) => s.id === sym);
             if (craftMode === "crochet") {
               drawCrochetSymbol(ctx, s.kind, s.bars, x + CELL / 2, y + CELL / 2, CELL, "#3D2B1F");
+            } else if (s.kind) {
+              drawKnitSymbol(ctx, s.kind, s.n, x + CELL / 2, y + CELL / 2, CELL, "#3D2B1F");
             } else {
               ctx.fillStyle = "#3D2B1F";
               ctx.fillText(s.glyph, x + CELL / 2, y + CELL / 2 + 1);
@@ -412,31 +632,67 @@ export default function ChartDesigner() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-5 items-center">
-          {SYMBOLS.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => setActive(s.id)}
-              title={`${s.label} (UK: ${s.uk})`}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition"
-              style={{
-                borderColor: active === s.id ? "#A6512C" : "#C9BBA8",
-                background: active === s.id ? "#F0DCC9" : "#FFFFFF",
-                color: "#3D2B1F",
-                boxShadow: active === s.id ? "0 0 0 2px #A6512C33" : "none",
-              }}
-            >
-              <span className="w-5 flex items-center justify-center text-base">
-                {craftMode === "crochet" ? (
+        {craftMode === "knit" ? (
+          Object.entries(
+            SYMBOLS.reduce((acc, s) => {
+              const cat = s.cat || "Other";
+              if (!acc[cat]) acc[cat] = [];
+              acc[cat].push(s);
+              return acc;
+            }, {})
+          ).map(([cat, syms]) => (
+            <div key={cat} className="mb-3">
+              <div className="text-xs mb-1 font-semibold" style={{ color: "#7A5C3E" }}>{cat}</div>
+              <div className="flex flex-wrap gap-2">
+                {syms.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => setActive(s.id)}
+                    title={`${s.label} (UK: ${s.uk})`}
+                    className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border text-sm transition"
+                    style={{
+                      borderColor: active === s.id ? "#A6512C" : "#C9BBA8",
+                      background: active === s.id ? "#F0DCC9" : "#FFFFFF",
+                      color: "#3D2B1F",
+                      boxShadow: active === s.id ? "0 0 0 2px #A6512C33" : "none",
+                    }}
+                  >
+                    <span className="w-5 flex items-center justify-center">
+                      {s.kind ? (
+                        <KnitSymbolSVG kind={s.kind} n={s.n} size={20} color="#3D2B1F" />
+                      ) : (
+                        <span className="text-base">{s.glyph}</span>
+                      )}
+                    </span>
+                    <span className="hidden sm:inline text-xs">{s.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {SYMBOLS.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setActive(s.id)}
+                title={`${s.label} (UK: ${s.uk})`}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition"
+                style={{
+                  borderColor: active === s.id ? "#A6512C" : "#C9BBA8",
+                  background: active === s.id ? "#F0DCC9" : "#FFFFFF",
+                  color: "#3D2B1F",
+                  boxShadow: active === s.id ? "0 0 0 2px #A6512C33" : "none",
+                }}
+              >
+                <span className="w-5 flex items-center justify-center text-base">
                   <CrochetSymbolSVG kind={s.kind} bars={s.bars} size={20} color="#3D2B1F" />
-                ) : (
-                  s.glyph
-                )}
-              </span>
-              <span className="hidden sm:inline">{s.label}</span>
-            </button>
-          ))}
-        </div>
+                </span>
+                <span className="hidden sm:inline">{s.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center gap-4 mb-3 text-sm" style={{ color: "#3D2B1F" }}>
           <div className="flex items-center gap-2">
@@ -524,6 +780,8 @@ export default function ChartDesigner() {
                         {sym ? (
                           craftMode === "crochet" ? (
                             <CrochetSymbolSVG kind={sym.kind} bars={sym.bars} size={CELL * 0.7} color="#3D2B1F" />
+                          ) : sym.kind ? (
+                            <KnitSymbolSVG kind={sym.kind} n={sym.n} size={CELL * 0.7} color="#3D2B1F" />
                           ) : (
                             sym.glyph
                           )
@@ -561,6 +819,8 @@ export default function ChartDesigner() {
                   <span className="w-7 h-7 flex items-center justify-center border rounded" style={{ borderColor: "#C9BBA8" }}>
                     {craftMode === "crochet" ? (
                       <CrochetSymbolSVG kind={s.kind} bars={s.bars} size={20} color="#3D2B1F" />
+                    ) : s.kind ? (
+                      <KnitSymbolSVG kind={s.kind} n={s.n} size={20} color="#3D2B1F" />
                     ) : (
                       s.glyph
                     )}
